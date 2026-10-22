@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traductor de Lengua de Señas Colombiana (LSC)</title>
+<meta name="description" content="Prototipo escolar de traducción de Lengua de Señas Colombiana a texto mediante visión por computador. Institución Educativa Aureliano Flórez Cardona.">
+
+<link rel="icon" type="image/png" href="escudo-institucional.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ======================= BARRA DE NAVEGACIÓN ======================= -->
+<header class="topbar">
+  <div class="topbar__brand">
+    <span class="brand__shield"><img src="escudo-institucional.png" alt="Escudo de la Institución Educativa Aureliano Flórez Cardona"></span>
+    <span class="brand__text">Traductor LSC</span>
+  </div>
+
+  <nav class="topbar__nav" aria-label="Navegación principal">
+    <button class="navlink" data-view="home" aria-current="page">Inicio</button>
+    <button class="navlink" data-view="projects">Proyectos</button>
+    <button class="navlink" data-view="train">Entrenar</button>
+    <button class="navlink" data-view="translator">Traducir</button>
+    <button class="navlink" data-view="signs">Patrones</button>
+    <button class="navlink" data-view="how">Cómo funciona</button>
+    <button class="navlink" data-view="stats">Estadísticas</button>
+    <button class="navlink" data-view="members">Integrantes</button>
+    <button class="navlink" data-view="about">Sobre el proyecto</button>
+  </nav>
+
+  <div class="topbar__project">
+    <span id="currentProjectLabel" class="project-pill">Sin proyecto abierto</span>
+    <button id="btnDemoMode" class="btn btn--ghost btn--small">Modo demostración</button>
+  </div>
+
+  <button class="topbar__burger" id="burgerBtn" aria-label="Abrir menú">☰</button>
+</header>
+
+<div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+<main id="app">
+
+  <!-- =================================================================== -->
+  <!-- INICIO                                                               -->
+  <!-- =================================================================== -->
+  <section id="view-home" class="view view--active">
+    <div class="hero">
+      <div class="hero__hand">
+        <img class="hero__shield-img" src="escudo-institucional.png" alt="Escudo de la Institución Educativa Aureliano Flórez Cardona">
+      </div>
+      <div class="hero__content">
+        <p class="hero__eyebrow">Institución Educativa Aureliano Flórez Cardona · Anserma, Caldas</p>
+        <h1 class="hero__title">Traductor de Lengua de Señas Colombiana (LSC)</h1>
+        <p class="hero__subtitle">Visión por computador aplicada a la inclusión</p>
+        <p class="hero__desc">
+          Prototipo escolar que utiliza la cámara del computador para reconocer un conjunto
+          limitado de señas —estáticas y dinámicas— de la Lengua de Señas Colombiana, entrenadas
+          por los propios estudiantes, y construir con ellas una representación escrita.
+        </p>
+
+        <div class="hero__team">
+          <p class="hero__team-label">Integrantes del proyecto</p>
+          <p class="hero__team-names">Emmanuel Moscoso López · Santiago Galvis Rendón · Emmanuel Montoya Valencia</p>
+          <p class="hero__team-grade">Grado: 11-A</p>
+        </div>
+
+        <div class="hero__actions">
+          <button class="btn btn--primary" data-view="translator">Iniciar traductor</button>
+          <button class="btn btn--secondary" data-view="projects">Explorar proyectos</button>
+        </div>
+        <p class="hero__note">
+          ⚠️ Este prototipo <strong>no traduce toda la Lengua de Señas Colombiana</strong> y no
+          reemplaza a un intérprete profesional. Reconoce únicamente las unidades (señas,
+          secuencias y expresiones) que el equipo registre y entrene.
+        </p>
+      </div>
+    </div>
+
+    <div class="home-grid">
+      <div class="info-card">
+        <h3>¿Qué hay de nuevo?</h3>
+        <p>El sistema ahora distingue <strong>señas estáticas</strong> (una postura), <strong>señas
+        dinámicas</strong> (un movimiento grabado en el tiempo) y <strong>secuencias o expresiones
+        compuestas</strong> formadas por varias unidades reconocidas en orden.</p>
+      </div>
+      <div class="info-card">
+        <h3>¿Cómo aprende el sistema?</h3>
+        <p>Cada unidad se entrena con varios ejemplos. El sistema extrae los landmarks de la(s)
+        mano(s) y los compara con K-vecinos más cercanos (señas estáticas) o con alineamiento
+        temporal DTW (señas dinámicas).</p>
+      </div>
+      <div class="info-card">
+        <h3>¿Dónde se guardan mis datos?</h3>
+        <p>Todo se guarda localmente en el navegador mediante <strong>IndexedDB</strong>. Nada se
+        envía a servidores externos. Puedes exportar tu proyecto como archivo JSON para
+        continuar en otro computador.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- PROYECTOS                                                            -->
+  <!-- =================================================================== -->
+  <section id="view-projects" class="view">
+    <div class="view-header">
+      <h2>Mis proyectos</h2>
+      <p>Crea, abre, exporta o elimina proyectos de entrenamiento.</p>
+    </div>
+
+    <div class="projects-toolbar">
+      <input type="text" id="newProjectNameInput" placeholder="Nombre del nuevo proyecto">
+      <button class="btn btn--primary" id="btnCreateProject">Crear proyecto</button>
+      <label class="btn btn--ghost file-btn">
+        Importar proyecto (.json)
+        <input type="file" id="importProjectInput" accept="application/json" hidden>
+      </label>
+    </div>
+
+    <div id="projectsGrid" class="projects-grid"></div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- ENTRENAR (flujo por etapas)                                          -->
+  <!-- =================================================================== -->
+  <section id="view-train" class="view">
+    <div class="view-header">
+      <h2>Entrenar una unidad</h2>
+      <p>Registra ejemplos de una seña estática, una seña con movimiento, o combina unidades ya entrenadas en una secuencia. La cámara se queda visible durante todo el proceso.</p>
+    </div>
+
+    <div id="noProjectWarning-train" class="warning-banner hidden">
+      No hay ningún proyecto abierto. Ve a <button class="linklike" data-view="projects">Mis proyectos</button>
+      para crear o abrir uno antes de entrenar.
+    </div>
+
+    <div id="trainWrapper">
+      <!-- Indicador de etapas -->
+      <div class="stepper" id="stepperIndicator">
+        <button class="stepper__dot" data-step="1"><span>1</span>Categoría</button>
+        <button class="stepper__dot" data-step="2"><span>2</span>Preparar</button>
+        <button class="stepper__dot" data-step="3"><span>3</span>Capturar</button>
+        <button class="stepper__dot" data-step="4"><span>4</span>Revisar</button>
+        <button class="stepper__dot" data-step="5"><span>5</span>Entrenar</button>
+        <button class="stepper__dot" data-step="6"><span>6</span>Verificar</button>
+        <button class="stepper__dot" data-step="7"><span>7</span>Guardar</button>
+      </div>
+
+      <div class="train-layout" id="trainLayout">
+        <!-- Cámara siempre visible mientras se entrena -->
+        <div class="camera-panel train-camera" id="trainCameraPanel">
+          <div class="camera-frame">
+            <video id="videoTrain" class="camera-video" autoplay playsinline muted></video>
+            <canvas id="overlayTrain" class="camera-overlay"></canvas>
+            <div id="cameraPlaceholder-train" class="camera-placeholder">
+              <span>📷</span>
+              <p>La cámara está apagada</p>
+            </div>
+          </div>
+          <div class="camera-controls">
+            <button class="btn btn--primary" id="btnCamOnTrain">Encender cámara</button>
+            <button class="btn btn--danger" id="btnCamOffTrain" disabled>Apagar cámara</button>
+            <button class="btn btn--ghost" id="btnCamSwitchTrain" disabled>Cambiar cámara</button>
+          </div>
+          <p class="hint-text" id="handStatusTrain">Esperando cámara…</p>
+          <ul class="checklist">
+            <li>Buena iluminación, de frente a la cámara.</li>
+            <li>La(s) mano(s) completas dentro del cuadro; deja espacio para el movimiento.</li>
+            <li>Los puntos verdes y amarillos sobre la mano indican que se está detectando.</li>
+          </ul>
+          <p class="privacy-note">🔒 Las capturas utilizadas para el entrenamiento se almacenan localmente en este navegador.</p>
+        </div>
+
+        <div class="train-steps">
+          <!-- ETAPA 1: categoría -->
+          <div class="step-panel" data-step-panel="1">
+            <h3>Etapa 1 · Seleccionar o crear categoría</h3>
+            <div class="form-grid">
+              <label>Nombre o etiqueta
+                <input type="text" id="patternNameInput" placeholder="Ej: HOLA">
+              </label>
+              <label>Tipo de patrón
+                <select id="patternTypeSelect">
+                  <option value="static">Seña estática (una postura quieta)</option>
+                  <option value="dynamic">Seña dinámica (con movimiento, ej. un saludo)</option>
+                  <option value="sequence">Secuencia de señas (unidades en orden)</option>
+                  <option value="composite">Expresión compuesta (documentada y verificada)</option>
+                </select>
+              </label>
+              <label class="form-grid__full">Descripción breve
+                <textarea id="patternDescInput" rows="2" placeholder="¿Qué representa esta unidad? (opcional)"></textarea>
+              </label>
+              <label class="form-grid__full">Fuente de referencia o verificación lingüística
+                <input type="text" id="patternSourceInput" placeholder="Ej: material consultado, persona sorda consultada, diccionario LSC (opcional)">
+              </label>
+            </div>
+            <p class="hint-text">El nombre utilizado es ilustrativo: solo debe asociarse a un significado real en LSC si cuentas con una fuente verificada.</p>
+            <button class="btn btn--primary" id="btnStartPattern">Crear / continuar con esta categoría</button>
+          </div>
+
+          <!-- ETAPA 2: preparar -->
+          <div class="step-panel" data-step-panel="2">
+            <h3>Etapa 2 · Preparar la captura</h3>
+            <p class="hint-text">Enciende la cámara con el botón de la columna de la cámara y comprueba que el estado diga que se detecta la mano.</p>
+            <ul class="checklist">
+              <li>Ubícate con buena iluminación, de frente a la cámara.</li>
+              <li>Asegúrate de que la(s) mano(s) estén completamente visibles en el encuadre.</li>
+              <li>Para señas con movimiento, deja espacio para ejecutarlo completo sin salirte del cuadro.</li>
+              <li>Mantén el mismo lugar y distancia que usarás después en el traductor.</li>
+            </ul>
+          </div>
+
+          <!-- ETAPA 3: capturar -->
+          <div class="step-panel" data-step-panel="3">
+            <h3>Etapa 3 · Capturar ejemplos</h3>
+            <p class="result-label">Categoría actual: <span id="currentPatternLabel">ninguna</span> <span id="currentPatternTypeTag" class="type-tag"></span></p>
+
+            <!-- Captura estática -->
+            <div id="staticCaptureBlock" class="hidden">
+              <button class="btn btn--primary btn--large" id="btnCaptureExample" disabled>Capturar ejemplo</button>
+              <button class="btn btn--secondary btn--large" id="btnCaptureBurst" disabled>Capturar ráfaga (15 ejemplos)</button>
+              <p class="hint-text">La ráfaga toma un ejemplo cada 0,3 s: mientras mantienes la seña, gira o mueve un poco la mano para dar variedad. Recomendado: entre 10 y 50 ejemplos.</p>
+            </div>
+
+            <!-- Captura dinámica -->
+            <div id="dynamicCaptureBlock" class="hidden">
+              <p class="hint-text"><strong>Cómo grabar:</strong> presiona el botón una sola vez y haz la seña completa frente a la cámara. El sistema detecta solo cuándo empieza y cuándo termina el movimiento y guarda cada repetición. Al terminar, deja la mano quieta medio segundo y repite la seña. Se sugieren entre 8 y 20 repeticiones, con pequeñas variaciones de velocidad.</p>
+              <div class="field-row">
+                <label for="recordDurationInput">Duración máxima de una repetición</label>
+                <input type="range" id="recordDurationInput" min="2" max="8" step="0.5" value="5">
+                <span id="recordDurationLabel">5 s</span>
+              </div>
+              <label class="autoadd-toggle"><input type="checkbox" id="toggleReviewEach"> revisar cada repetición antes de guardarla</label>
+              <button class="btn btn--primary btn--large" id="btnRecordDynamic" disabled>● Empezar a grabar repeticiones</button>
+              <div id="recordingIndicator" class="recording-indicator hidden">
+                <span class="recording-indicator__dot"></span>
+                <span id="recordingCountdown">Esperando movimiento…</span>
+              </div>
+              <div id="recordingPreview" class="recording-preview hidden">
+                <p>Repetición grabada: <strong id="recordingFrameCount">0</strong> fotogramas.</p>
+                <div class="recording-preview__actions">
+                  <button class="btn btn--primary btn--small" id="btnAcceptRecording">Guardar repetición</button>
+                  <button class="btn btn--danger btn--small" id="btnDiscardRecording">Descartar</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Constructor de secuencias / expresiones compuestas -->
+            <div id="sequenceBuilderBlock" class="hidden">
+              <p class="hint-text">Selecciona unidades ya entrenadas y agrégalas en el orden en que deben reconocerse.</p>
+              <div id="unitPickerList" class="unit-picker"></div>
+              <button class="btn btn--secondary btn--small" id="btnAddUnitToSequence">Agregar seleccionadas al final</button>
+              <p class="result-label" style="margin-top:1rem;">Orden actual de la secuencia</p>
+              <ol id="sequenceBuilderList" class="sequence-builder-list"></ol>
+            </div>
+
+            <div id="examplesReviewInline">
+              <p id="exampleCountLabel" class="example-count">Ejemplos registrados: 0</p>
+              <div id="examplesGrid" class="examples-grid"></div>
+            </div>
+          </div>
+
+          <!-- ETAPA 4: revisar -->
+          <div class="step-panel" data-step-panel="4">
+            <h3>Etapa 4 · Revisar los datos</h3>
+            <p class="hint-text">Revisa los ejemplos o la secuencia antes de entrenar. Puedes eliminar lo que no sirva y volver a la etapa anterior sin perder el resto.</p>
+            <div id="reviewSummary" class="review-summary"></div>
+          </div>
+
+          <!-- ETAPA 5: entrenar -->
+          <div class="step-panel" data-step-panel="5">
+            <h3>Etapa 5 · Entrenar</h3>
+            <p class="hint-text" id="trainRequirementHint"></p>
+            <button class="btn btn--primary btn--large" id="btnTrainPattern" disabled>Entrenar patrón</button>
+          </div>
+
+          <!-- ETAPA 6: verificar -->
+          <div class="step-panel" data-step-panel="6">
+            <h3>Etapa 6 · Verificar</h3>
+            <div id="verifyStaticDynamicBlock" class="hidden">
+              <p class="hint-text">Realiza la seña una vez más frente a la cámara (distinta a los ejemplos usados para entrenar) y comprueba si el sistema la reconoce. Este ejemplo de prueba NO se agrega al entrenamiento.</p>
+              <button class="btn btn--secondary" id="btnVerifyPattern">Probar ahora (estática)</button>
+              <button class="btn btn--secondary" id="btnVerifyRecordDynamic">● Probar seña dinámica</button>
+              <div id="recordingIndicatorVerify" class="recording-indicator hidden">
+                <span class="recording-indicator__dot"></span>
+                <span id="recordingCountdownVerify">Esperando movimiento…</span>
+              </div>
+              <div id="verifyResultBox" class="result-card hidden">
+                <p class="result-label">Resultado de la prueba</p>
+                <p id="verifyResultText" class="result-text">—</p>
+                <p id="verifyResultScore" class="confidence-text"></p>
+                <div class="modal__actions" style="justify-content:flex-start;">
+                  <button class="btn btn--small btn--primary" id="btnVerifyCorrect">✓ Es correcto</button>
+                  <button class="btn btn--small btn--danger" id="btnVerifyIncorrect">✕ No es correcto</button>
+                </div>
+              </div>
+            </div>
+            <div id="verifySequenceBlock" class="hidden">
+              <p class="hint-text">Las secuencias y expresiones compuestas se verifican en la pestaña
+              <button class="linklike" data-view="translator">Traducir</button>, realizando las señas que la componen en orden frente a la cámara.</p>
+            </div>
+          </div>
+
+          <!-- ETAPA 7: guardar -->
+          <div class="step-panel" data-step-panel="7">
+            <h3>Etapa 7 · Guardar</h3>
+            <p class="hint-text">El proyecto se guarda automáticamente en este navegador (IndexedDB) después de cada cambio.</p>
+            <p id="saveConfirmation" class="save-confirmation">✓ Guardado correctamente.</p>
+            <button class="btn btn--primary" id="btnFinishTraining">Finalizar e ir a Patrones entrenados</button>
+          </div>
+
+          <div class="step-nav">
+            <button class="btn btn--ghost" id="btnStepBack">← Atrás</button>
+            <button class="btn btn--primary" id="btnStepNext">Siguiente →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- TRADUCIR                                                             -->
+  <!-- =================================================================== -->
+  <section id="view-translator" class="view">
+    <div class="view-header">
+      <h2>Traducir</h2>
+      <p>Enciende la cámara y haz las señas: las posturas quietas y las señas con movimiento se detectan solas, sin presionar ningún botón. Las unidades reconocidas se combinan, en orden, en una secuencia de texto.</p>
+    </div>
+
+    <div id="noProjectWarning-translator" class="warning-banner hidden">
+      No hay ningún proyecto abierto. Ve a <button class="linklike" data-view="projects">Mis proyectos</button>
+      para crear o abrir uno antes de traducir.
+    </div>
+
+    <div class="translator-layout">
+      <div class="camera-panel">
+        <div class="camera-frame">
+          <video id="videoTranslator" class="camera-video" autoplay playsinline muted></video>
+          <canvas id="overlayTranslator" class="camera-overlay"></canvas>
+          <div id="cameraPlaceholder-translator" class="camera-placeholder">
+            <span>📷</span>
+            <p>La cámara está apagada</p>
+          </div>
+        </div>
+        <div class="camera-controls">
+          <button class="btn btn--primary" id="btnCamOnTranslator">Encender cámara</button>
+          <button class="btn btn--danger" id="btnCamOffTranslator" disabled>Apagar cámara</button>
+          <button class="btn btn--ghost" id="btnCamSwitchTranslator" disabled>Cambiar cámara</button>
+          <button class="btn btn--ghost" id="btnPauseRecognition" disabled>⏸ Pausar reconocimiento</button>
+        </div>
+        <p class="hint-text" id="handStatusTranslator">Esperando cámara…</p>
+        <ul class="checklist">
+          <li><strong>Seña con movimiento:</strong> hazla completa y, al terminar, deja la mano quieta un instante.</li>
+          <li><strong>Seña quieta:</strong> mantén la postura medio segundo.</li>
+          <li>Para repetir la misma seña, baja la mano o haz otro movimiento entre una y otra.</li>
+        </ul>
+      </div>
+
+      <div class="result-panel">
+        <div class="result-card">
+          <div class="result-card__head">
+            <p class="result-label">Unidad reconocida</p>
+            <span id="resultTypeTag" class="type-tag"></span>
+          </div>
+          <p id="resultText" class="result-text">—</p>
+          <div class="confidence-bar">
+            <div id="confidenceFill" class="confidence-bar__fill"></div>
+          </div>
+          <p id="confidenceText" class="confidence-text">Similitud: —</p>
+          <p id="recognitionState" class="recognition-state" data-kind="idle">Esperando seña…</p>
+          <p class="disclaimer-text">
+            La <strong>similitud</strong> indica qué tan parecida es la seña a los ejemplos que entrenaste,
+            comparada con lo que varían esos mismos ejemplos. No es una probabilidad ni una medición
+            certificada de precisión lingüística. Si una seña se parece a dos entrenadas por igual,
+            no se elige ninguna.
+          </p>
+        </div>
+
+        <div class="history-card">
+          <div class="history-card__head">
+            <p class="result-label">Secuencia / texto construido</p>
+            <label class="autoadd-toggle">
+              <input type="checkbox" id="toggleAutoAdd" checked> incorporación automática
+            </label>
+          </div>
+          <p id="composedTextDisplay" class="composed-text">—</p>
+          <div id="compositeMatchBanner" class="composite-banner hidden"></div>
+          <div class="history-card__actions">
+            <button class="btn btn--ghost btn--small" id="btnConfirmUnit">Confirmar unidad</button>
+            <button class="btn btn--ghost btn--small" id="btnUndoUnit">Deshacer última</button>
+            <button class="btn btn--ghost btn--small" id="btnClearText">Borrar texto</button>
+            <button class="btn btn--ghost btn--small" id="btnCopyText">Copiar</button>
+          </div>
+        </div>
+
+        <div class="history-card">
+          <div class="history-card__head">
+            <p class="result-label">Historial de reconocimientos</p>
+            <button class="btn btn--small btn--ghost" id="btnClearHistory">Limpiar historial</button>
+          </div>
+          <ul id="historyList" class="history-list">
+            <li class="history-empty">Aún no hay reconocimientos.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- PATRONES ENTRENADOS (antes "base de señas")                         -->
+  <!-- =================================================================== -->
+  <section id="view-signs" class="view">
+    <div class="view-header">
+      <h2>Patrones entrenados del proyecto</h2>
+      <p>Consulta, amplía o elimina las señas, secuencias y expresiones registradas.</p>
+    </div>
+
+    <div id="noProjectWarning-signs" class="warning-banner hidden">
+      No hay ningún proyecto abierto. Ve a <button class="linklike" data-view="projects">Mis proyectos</button>
+      para crear o abrir uno.
+    </div>
+
+    <div id="signsList" class="signs-list"></div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- CÓMO FUNCIONA                                                        -->
+  <!-- =================================================================== -->
+  <section id="view-how" class="view">
+    <div class="view-header">
+      <h2>¿Cómo funciona?</h2>
+      <p>El reconocimiento ocurre completamente en el navegador, sin enviar datos a servidores.</p>
+    </div>
+
+    <div class="pipeline">
+      <div class="pipeline__step"><span class="pipeline__icon">📷</span><h4>Cámara</h4><p>Video en tiempo real desde la webcam.</p></div>
+      <div class="pipeline__arrow">→</div>
+      <div class="pipeline__step"><span class="pipeline__icon">🖐️</span><h4>Detección de manos</h4><p>MediaPipe localiza 21 puntos por mano (hasta 2 manos).</p></div>
+      <div class="pipeline__arrow">→</div>
+      <div class="pipeline__step"><span class="pipeline__icon">🧠</span><h4>Características</h4><p>Posiciones relativas, escala y, en señas dinámicas, trayectoria en el tiempo.</p></div>
+      <div class="pipeline__arrow">→</div>
+      <div class="pipeline__step"><span class="pipeline__icon">🔎</span><h4>Comparación</h4><p>KNN para posturas estáticas; DTW para movimientos.</p></div>
+      <div class="pipeline__arrow">→</div>
+      <div class="pipeline__step"><span class="pipeline__icon">🔗</span><h4>Secuencias</h4><p>Varias unidades reconocidas se combinan respetando su orden.</p></div>
+      <div class="pipeline__arrow">→</div>
+      <div class="pipeline__step"><span class="pipeline__icon">📝</span><h4>Texto</h4><p>Se muestra la secuencia de etiquetas reconocidas.</p></div>
+    </div>
+
+    <div class="tech-notes">
+      <h3>Notas técnicas</h3>
+      <ul>
+        <li>La detección de manos usa <strong>MediaPipe Tasks Vision (HandLandmarker)</strong>, en el navegador vía WebAssembly, con soporte para hasta 2 manos.</li>
+        <li>Las señas <strong>estáticas</strong> se detectan cuando la mano queda quieta unos instantes: se comparan con los ejemplos entrenados (vecinos más cercanos) y se acepta solo si la postura cae dentro de lo que varían esos mismos ejemplos.</li>
+        <li>Las señas <strong>dinámicas</strong> se detectan solas: el sistema nota cuándo la mano empieza a moverse y cuándo se detiene, y compara ese movimiento completo (forma de la mano y trayectoria) con los ejemplos entrenados usando <strong>Dynamic Time Warping (DTW)</strong>, que tolera ir más rápido o más lento.</li>
+        <li>Las <strong>secuencias</strong> y <strong>expresiones compuestas</strong> no usan un clasificador propio: se detectan cuando las unidades que las componen se reconocen en el orden definido durante el entrenamiento.</li>
+        <li>El modelo del detector de manos se descarga una vez desde internet; el reconocimiento de señas en sí (KNN y DTW) corre 100% en JavaScript, sin servidor.</li>
+        <li><strong>Limitación honesta:</strong> DTW es una primera versión funcional de reconocimiento temporal, no un modelo de aprendizaje profundo entrenado específicamente para LSC. Funciona mejor con pocas decenas de señas dinámicas bien diferenciadas entre sí.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- ESTADÍSTICAS                                                         -->
+  <!-- =================================================================== -->
+  <section id="view-stats" class="view">
+    <div class="view-header">
+      <h2>Estadísticas</h2>
+      <p>Datos reales calculados a partir del uso de la aplicación en este proyecto.</p>
+    </div>
+
+    <div id="noProjectWarning-stats" class="warning-banner hidden">
+      No hay ningún proyecto abierto. Ve a <button class="linklike" data-view="projects">Mis proyectos</button>
+      para crear o abrir uno.
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><p class="stat-value" id="statStatic">N/D</p><p class="stat-label">Señas estáticas</p></div>
+      <div class="stat-card"><p class="stat-value" id="statDynamic">N/D</p><p class="stat-label">Señas dinámicas</p></div>
+      <div class="stat-card"><p class="stat-value" id="statSequences">N/D</p><p class="stat-label">Secuencias / expresiones</p></div>
+      <div class="stat-card"><p class="stat-value" id="statTrained">N/D</p><p class="stat-label">Patrones entrenados</p></div>
+      <div class="stat-card"><p class="stat-value" id="statExamples">N/D</p><p class="stat-label">Ejemplos registrados</p></div>
+      <div class="stat-card"><p class="stat-value" id="statRecognitions">N/D</p><p class="stat-label">Reconocimientos realizados</p></div>
+      <div class="stat-card"><p class="stat-value" id="statAccuracy">N/D</p><p class="stat-label">Similitud promedio</p></div>
+      <div class="stat-card"><p class="stat-value" id="statEvalAccuracy">N/D</p><p class="stat-label">Precisión en pruebas (etapa Verificar)</p></div>
+    </div>
+    <p class="hint-text">La "precisión en pruebas" solo aparece cuando se han registrado verificaciones reales en la Etapa 6 de Entrenar. No se inventan cifras.</p>
+
+    <div id="noProjectWarning-settings" class="warning-banner hidden" style="margin-top:2rem;">
+      No hay ningún proyecto abierto. Abre un proyecto para ajustar su umbral de reconocimiento.
+    </div>
+    <div id="settingsPanel" class="tech-notes" style="margin-top:2rem;">
+      <h3>Configuración del reconocedor</h3>
+      <p class="hint-text">Estos valores se guardan con el proyecto y se aplican de inmediato en la pestaña Traducir. Súbelos si el sistema confunde señas parecidas; bájalos si rechaza señas que sí están bien entrenadas. Si la sensibilidad es alta, movimientos pequeños empiezan a contar como seña; si es baja, hay que moverse más.</p>
+
+      <div class="field-row">
+        <label for="settingConfidenceThreshold" style="min-width:260px;">Umbral de similitud — señas estáticas</label>
+        <input type="range" id="settingConfidenceThreshold" min="30" max="95" step="1" value="70">
+        <span id="settingConfidenceThresholdLabel" class="type-tag">70%</span>
+      </div>
+      <div class="field-row">
+        <label for="settingSimilarityThreshold" style="min-width:260px;">Umbral de similitud — señas con movimiento (DTW)</label>
+        <input type="range" id="settingSimilarityThreshold" min="10" max="95" step="1" value="55">
+        <span id="settingSimilarityThresholdLabel" class="type-tag">55%</span>
+      </div>
+      <div class="field-row">
+        <label for="settingK" style="min-width:260px;">K — vecinos considerados (KNN, estáticas)</label>
+        <input type="range" id="settingK" min="1" max="15" step="1" value="5">
+        <span id="settingKLabel" class="type-tag">5</span>
+      </div>
+      <div class="field-row">
+        <label for="settingStableFrames" style="min-width:260px;">Fotogramas estables antes de confirmar (estáticas)</label>
+        <input type="range" id="settingStableFrames" min="2" max="20" step="1" value="6">
+        <span id="settingStableFramesLabel" class="type-tag">6</span>
+      </div>
+      <div class="field-row">
+        <label for="settingMotionSensitivity" style="min-width:260px;">Sensibilidad al movimiento (detección automática)</label>
+        <input type="range" id="settingMotionSensitivity" min="0.5" max="2" step="0.1" value="1">
+        <span id="settingMotionSensitivityLabel" class="type-tag">1×</span>
+      </div>
+      <p class="hint-text">Un umbral más alto exige mayor parecido antes de aceptar una seña como reconocida; reduce falsos positivos pero puede rechazar señas válidas si el entrenamiento tiene pocos ejemplos.</p>
+    </div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- INTEGRANTES                                                          -->
+  <!-- =================================================================== -->
+  <section id="view-members" class="view">
+    <div class="view-header">
+      <h2>Integrantes del proyecto</h2>
+      <p>Institución Educativa Aureliano Flórez Cardona — Anserma, Caldas</p>
+    </div>
+    <div class="members-grid">
+      <div class="member-card">
+        <div class="member-card__icon">🧑‍💻</div>
+        <h3>Emmanuel Moscoso López</h3>
+        <p class="meta">Grado 11-A</p>
+      </div>
+      <div class="member-card">
+        <div class="member-card__icon">🧑‍💻</div>
+        <h3>Santiago Galvis Rendón</h3>
+        <p class="meta">Grado 11-A</p>
+      </div>
+      <div class="member-card">
+        <div class="member-card__icon">🧑‍💻</div>
+        <h3>Emmanuel Montoya Valencia</h3>
+        <p class="meta">Grado 11-A</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- SOBRE EL PROYECTO                                                    -->
+  <!-- =================================================================== -->
+  <section id="view-about" class="view">
+    <div class="view-header"><h2>Sobre el proyecto</h2></div>
+    <div class="about-content">
+      <p>La comunicación es fundamental para la vida en sociedad. Sin embargo, pueden existir
+      barreras cuando las personas oyentes no conocen la Lengua de Señas Colombiana (LSC).</p>
+      <p>Este proyecto escolar busca demostrar cómo la visión por computador puede apoyar el
+      reconocimiento de un vocabulario limitado de la LSC —incluyendo señas estáticas, dinámicas
+      y secuencias de varias unidades— y representarlo como texto, usando únicamente tecnologías
+      del navegador.</p>
+      <p class="warning-banner">
+        La LSC es una lengua natural, con su propia gramática y estructura, usada por una
+        comunidad lingüística. Este prototipo <strong>no traduce toda la LSC</strong>, no inventa
+        reglas gramaticales y <strong>no reemplaza a un intérprete profesional</strong>. Las
+        secuencias reconocidas se muestran como lo que son —una concatenación de etiquetas
+        entrenadas por el equipo— y no se presentan como una traducción lingüística validada.
+      </p>
+      <h3>Señas sugeridas para empezar</h3>
+      <ul class="suggested-signs">
+        <li>Hola</li><li>Gracias</li><li>Por favor</li><li>Sí</li><li>No</li>
+        <li>Adiós</li><li>Buenos días</li><li>Buenas tardes</li><li>Ayuda</li>
+        <li>Agua</li><li>Comida</li><li>Escuela</li><li>Amigo</li><li>Perdón</li><li>¿Cómo estás?</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<!-- ======================= MODO DEMOSTRACIÓN ======================= -->
+<div id="demoOverlay" class="demo-overlay hidden">
+  <button id="btnExitDemo" class="btn btn--ghost demo-exit">✕ Salir del modo demostración</button>
+  <img class="demo-shield" src="escudo-institucional.png" alt="">
+  <h1 class="demo-title">TRADUCTOR LSC</h1>
+  <div class="demo-camera-frame">
+    <video id="videoDemo" class="camera-video" autoplay playsinline muted></video>
+    <canvas id="overlayDemo" class="camera-overlay"></canvas>
+  </div>
+  <p class="demo-instruction">Realiza una seña frente a la cámara</p>
+  <p class="demo-label">SEÑA DETECTADA</p>
+  <p id="demoResultText" class="demo-result">—</p>
+  <p id="demoConfidenceText" class="demo-confidence">Similitud: —</p>
+</div>
+
+<!-- ======================= MODAL DE CONFIRMACIÓN ======================= -->
+<div id="confirmModal" class="modal hidden">
+  <div class="modal__box">
+    <p id="confirmModalText">¿Estás seguro?</p>
+    <div class="modal__actions">
+      <button id="confirmModalCancel" class="btn btn--ghost">Cancelar</button>
+      <button id="confirmModalAccept" class="btn btn--danger">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="database.js"></script>
+<script type="module" src="camera.js"></script>
+<script type="module" src="recognition.js"></script>
+<script type="module" src="script.js"></script>
+</body>
+</html>
